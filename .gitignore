@@ -1,0 +1,24 @@
+# python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# BioNetGen scratch files
+*.bngl
+*.net
+*.gdat
+*.cdat
+*.xml
+BNG2.pl.bak
+
+# PyDREAM per-chain run files (the summaries and thinned posteriors are committed)
+dream_*/run_*
+*_DREAM_chain_*.npy
+*_DREAM_chain_*.txt
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
