@@ -15,6 +15,10 @@ experiment run in collaboration with Dr. Kaustav Majumder's lab (University of N
 These results are unpublished. The dose labels are nominal in the model, which fits dose in
 arbitrary units; see the caveats below before reusing any number here.
 
+**Interactive explorer.** An interactive version of the two panels below, with a slider for the
+brake threshold and the fitted posteriors drawn against the data:
+https://claude.ai/artifact/GeYWW9LWJCcEsR8hXijkyM (viewable by people it has been shared with).
+
 Two candidate wirings of the direct receptor route, built in PySB and simulated through
 BioNetGen. Both models have 8 species, 12 reactions, 8 ODEs.
 
@@ -26,10 +30,11 @@ BioNetGen. Both models have 8 species, 12 reactions, 8 ODEs.
 | `targets.csv` | The real limma log2 fold changes used as fit targets, with FDR, source, and why each protein is in or out. |
 | `calibrate.py` | PyDREAM calibration of either model against `targets.csv`. |
 | `demo_fit.py` | Live demo of the calibration. `--live N` runs a short visible PyDREAM burst first, then loads the saved full run. |
-| `CHANGES_after_review.md` | Each of Dr. Harris's review comments mapped to what changed in the code. |
+| `CHANGES_after_review.md` | Each code-review comment mapped to what changed in the model. |
 | `FIT_RESULTS.md` | The fitted numbers, what is identifiable, and the caveats. |
-| `DEMO_CARD.md` | The script for showing all of this in 8 to 10 minutes. |
+| `WALKTHROUGH.md` | A guided run of the whole thing in 8 to 10 minutes. |
 | `setup_check.py` | One-time install, the PyDREAM NumPy 2 patch, and a smoke test. |
+| `requirements.txt` | The exact package versions this was run and calibrated with. |
 | `bng_setup.py` | Sets `BNGPATH` so BioNetGen finds its own Perl modules on Windows. |
 | `fix_bng.py` | Diagnostic for the BioNetGen / perl setup if `demo.py` fails. |
 | `dream_M1/`, `dream_M3/` | Saved posterior samples, log-likelihoods, and fit summaries. |
@@ -73,7 +78,7 @@ Of M3's 10 fitted parameters, three doses pin down three: `fold_p`, `Km_arr`, `n
 
 ## Honest caveats
 * The brake is keyed to the occupied receptor through a Michaelis-Menten (Hill) reduction with
-  beta-arrestin2 as the enzyme held at constant total, per Dr. Harris's review. An earlier version
+  beta-arrestin2 as the enzyme held at constant total, following code review. An earlier version
   keyed it to the clamped peptide level, which was wrong; see `CHANGES_after_review.md`.
 * Dose enters as `gEV_0` in the same arbitrary units as `kf`/`kr`, so the receptor Kd is fitted
   rather than assumed. The mg/kg/day labels on the x axis are nominal.

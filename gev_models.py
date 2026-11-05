@@ -1,5 +1,5 @@
 """
-gamma-EV dose-response models (BMEG 5700V project), v2 after Dr. Harris's review.
+gamma-EV dose-response models (BMEG 5700V project), v2, revised after code review.
 
 Two candidate wirings of the direct (receptor) route, written in PySB.
 Units are deliberately arbitrary: the goal at this stage is shape, not numbers.

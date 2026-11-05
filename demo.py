@@ -18,7 +18,7 @@ from gev_models import build
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--threshold", type=float, default=72.0, help="occupied-receptor level at half-max braking (Km_arr)")
-ap.add_argument("--hill", type=float, default=8.0, help="steepness of the brake switch")
+ap.add_argument("--hill", type=float, default=12.0, help="steepness of the brake switch (n_hill)")
 ap.add_argument("--no-plot", action="store_true")
 args = ap.parse_args()
 
@@ -36,6 +36,7 @@ for m in (M1, M3):
     pv = np.tile(base, (len(DOSES), 1))
     pv[:, names.index("gEV_0")] = DOSES
     pv[:, names.index("Km_arr")] = args.threshold
+    pv[:, names.index("n_hill")] = args.hill
     sim = ScipyOdeSimulator(m, tspan=T, compiler="python")
     res = sim.run(param_values=pv)
     obs = res.observables                      # list of per-run record arrays
@@ -57,7 +58,12 @@ for name, label in (("M1_one_receptor", "M1 one receptor"), ("M3_receptor_plus_b
     print(f"{'   flip protein P (x control)':28s}" + "".join(f"{p[i]:10.2f}" for i in idx) + f"   {shape}")
 print(f"\nData: VCAM1 ~0.4x at 150 and down at 500 (western blot); the 8 flip proteins ~0.3x at 150 and 2 to 4x at 500.")
 p3 = rel(results["M3_receptor_plus_brake"], "obs_P")
-cross = next((DOSES[i] for i in range(idx[1], len(DOSES)) if p3[i] >= 1), None)
+cross = None
+for i in range(1, len(DOSES)):                      # linear interpolation, not grid snapping
+    if p3[i - 1] < 1 <= p3[i]:
+        f = (1 - p3[i - 1]) / (p3[i] - p3[i - 1])
+        cross = DOSES[i - 1] + f * (DOSES[i] - DOSES[i - 1])
+        break
 print(f"M3 predicts P crosses back above control near dose {cross:.0f} (brake Km = {args.threshold:.0f} occupied receptors)." if cross else "M3 does not cross control in this range.")
 
 if args.no_plot:

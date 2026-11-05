@@ -22,3 +22,6 @@ dream_*/run_*
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# private prep notes, not for the public repo
+DEMO_NOTES_private.md

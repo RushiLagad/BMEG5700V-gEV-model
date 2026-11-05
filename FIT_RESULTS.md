@@ -31,7 +31,7 @@ how sharp it is) and say almost nothing about the rate constants. That is the ho
 ## Caveats, in order of importance
 1. Gelman-Rubin for M3 is 1.2 to 1.6 on several parameters: NOT converged at 1500 iterations.
    Run 5000+ iterations (about 30 min on a laptop) before quoting intervals. M1 is converged (GR < 1.1).
-2. The Hill coefficient wants to be high (7 to 15). Ask Dr. Harris whether that is defensible for
+2. The Hill coefficient wants to be high (7 to 15). Open question: whether that is defensible for
    arrestin recruitment or whether a slower process (receptor internalisation / recycling) should
    carry part of the switch. This is the main modeling question the fit raises.
 3. VCAM1 is fitted as a compromise (-0.70 / -0.91 vs -1.24 / -0.48). The data says VCAM1 partly

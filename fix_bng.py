@@ -90,14 +90,14 @@ if not results["as-is"]:
 
 print("\n" + "=" * 70)
 if results.get("as-is"):
-    print("BioNetGen already works. The earlier failure was something else; paste this output.")
+    print("BioNetGen already works. The earlier failure was something else; see the output above.")
 elif results.get("fwd"):
     print("FIXED by BNGPATH with forward slashes. bng_setup.py already does this,")
     print("and demo.py / calibrate.py / run_dose_response.py import it, so just rerun:")
     print("    python demo.py")
 elif results.get("back"):
-    print("FIXED by BNGPATH with backslashes. Tell Claude: the posix form did not work.")
+    print("FIXED by BNGPATH with backslashes (the posix form did not work on this machine).")
 else:
-    print("Still failing. Paste this whole output. The likely next step is a native perl:")
+    print("Still failing. The likely next step is a native perl:")
     print("    conda install -c conda-forge strawberryperl")
 print("=" * 70)

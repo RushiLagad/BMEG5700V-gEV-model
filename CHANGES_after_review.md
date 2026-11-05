@@ -1,4 +1,6 @@
-# What changed after Dr. Harris's review (Nov 5)
+# Model revisions after code review (November 2026)
+
+Changes made to the model after a line-by-line code review by the course instructor.
 
 ## His comment 1: the binding rule was a synthesis rule
 v1:  `gEV + CaSR >> gEV + CaSR%gEV`
