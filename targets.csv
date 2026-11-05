@@ -1,0 +1,19 @@
+protein,role,dose_mg_kg,log2FC_vs_control,FDR,source,use_in_fit,note
+VCAM1,readout_vcam1,150,-1.24,0.018,limma Low vs Control (RL edits Jul 21; Combined Aug 20),yes,significant in proteomics
+VCAM1,readout_vcam1,500,-0.48,0.41,limma High vs Control (Combined Aug 20),yes,not significant in proteomics; western blot (Majumder lab) confirms significantly lower at 500
+Nceh1,readout_P,150,-1.88,6.9e-11,limma Low vs Control,yes,U-shaped; anchor
+Nceh1,readout_P,500,2.02,7.6e-12,limma High vs Control,yes,U-shaped; anchor
+Comp,readout_P,150,-2.16,9.8e-09,limma Low vs Control,yes,U-shaped; anchor
+Comp,readout_P,500,1.10,2.3e-04,limma High vs Control,yes,U-shaped; anchor
+Serinc3,readout_P,150,-1.84,2.6e-07,limma Low vs Control,yes,U-shaped; anchor
+Serinc3,readout_P,500,1.82,2.4e-07,limma High vs Control,yes,U-shaped; anchor
+Aldh1l2,readout_P,150,-1.24,4.5e-09,limma Low vs Control,yes,U-shaped; mitochondrial (heart tissue is mitochondria-rich; keep but watch)
+Aldh1l2,readout_P,500,1.99,2.1e-13,limma High vs Control,yes,U-shaped
+Sh3bgr,readout_P,150,-1.83,9.0e-10,limma Low vs Control,yes,U-shaped; heart/muscle-enriched gene; keep but watch
+Sh3bgr,readout_P,500,1.18,1.2e-06,limma High vs Control,yes,U-shaped
+Tnnc1,readout_P,150,-1.28,2.5e-04,limma Low vs Control,no,troponin; absent from smooth muscle; excluded pending histology (item 4)
+Tnnc1,readout_P,500,4.54,6.0e-14,limma High vs Control,no,excluded pending histology
+Saa1,inverted_U,150,1.41,1.8e-06,limma Low vs Control,no,acute-phase; mostly liver-derived; not an artery-wall readout
+Saa1,inverted_U,500,-1.00,1.9e-04,limma High vs Control,no,not modeled
+Saa2,inverted_U,150,2.98,1.6e-11,limma Low vs Control,no,not modeled
+Saa2,inverted_U,500,-2.30,1.1e-09,limma High vs Control,no,not modeled
