@@ -1,0 +1,11 @@
+# Versions this project was run and calibrated with (Windows 11, Python 3.13, miniforge).
+# Install with: pip install -r requirements.txt
+# Then see README.md: PyDREAM 2.0.0 needs a two-line patch under NumPy 2, which
+# setup_check.py applies automatically.
+pysb==1.17.0
+bionetgen==0.8.7
+pydream==2.0.0
+numpy==2.5.3
+scipy==1.18.1
+pandas==3.0.5
+matplotlib==3.11.2
