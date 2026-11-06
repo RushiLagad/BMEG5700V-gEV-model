@@ -19,8 +19,8 @@ arbitrary units; see the caveats below before reusing any number here.
 brake threshold and the fitted posteriors drawn against the data:
 https://claude.ai/artifact/GeYWW9LWJCcEsR8hXijkyM (viewable by people it has been shared with).
 
-Two candidate wirings of the direct receptor route, built in PySB and simulated through
-BioNetGen. Both models have 8 species, 12 reactions, 8 ODEs.
+Two candidate wirings of the direct receptor route, defined in PySB and simulated from the
+pre-generated networks. Both models have 8 species, 12 reactions, 8 ODEs.
 
 | File | What it is |
 |---|---|
@@ -59,7 +59,7 @@ times faster than going through PySB.
 To work from the PySB models directly instead, install `pysb` and `bionetgen` (and Perl, on
 Windows) and either set `GEV_ENGINE=pysb` or pass `engine="pysb"` to `engine.load`. After
 editing `gev_models.py`, run `python make_network.py` to regenerate, then `python
-verify_network.py` to confirm the two agree. They currently match to 1.3e-7.
+verify_network.py` to confirm the two agree. They currently match to 2.4e-8.
 
 ## Run
 ```
@@ -67,7 +67,7 @@ python demo.py                          # structural claim, about a second
 python run_dose_response.py             # full dose sweep figure
 python demo_fit.py                      # load the saved fit, print M1 vs M3, draw demo_fit.png
 python demo_fit.py --live 150           # 70 s of visible sampling first
-python calibrate.py --model M3 --niter 5000 --nchains 3    # the real run, tens of minutes
+python calibrate.py --model M3 --niter 30000 --nchains 3   # the run behind the numbers below
 ```
 
 ## What the fit says (real targets, PyDREAM, 3 chains x 30000, both converged)
