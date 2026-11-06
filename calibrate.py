@@ -21,10 +21,7 @@ import argparse, json, os, sys, time
 import numpy as np
 import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import bng_setup  # noqa: F401  sets BNGPATH so BioNetGen finds its own Perl modules
-from pysb.simulator import ScipyOdeSimulator
-from pysb.bng import generate_equations
-from gev_models import build
+from engine import load
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOSES = np.array([0.0, 150.0, 500.0])
@@ -62,21 +59,19 @@ FIT_M3_EXTRA = {
 _S = {}
 
 def setup(model_name):
-    m = build(with_brake=(model_name == "M3"))
-    generate_equations(m)
-    names = [p.name for p in m.parameters]
+    sim = load(model_name)
     fit = dict(FIT); fit.update(FIT_M3_EXTRA if model_name == "M3" else {})
     fit_names = list(fit)
-    _S.update(model=m, base=np.array([p.value for p in m.parameters], dtype=float), fit=fit, fit_names=fit_names,
-              idx=[names.index(n) for n in fit_names], gidx=names.index("gEV_0"),
-              sim=ScipyOdeSimulator(m, tspan=T, compiler="python"))
-    return m, fit_names, fit
+    _S.update(sim=sim, base=sim.defaults.copy(), fit=fit, fit_names=fit_names,
+              idx=[sim.index[n] for n in fit_names], gidx=sim.index["gEV_0"])
+    return sim, fit_names, fit
+
 
 def simulate(theta_log10):
     pv = np.tile(_S["base"], (3, 1))
     pv[:, _S["idx"]] = 10 ** np.asarray(theta_log10)
     pv[:, _S["gidx"]] = DOSES
-    obs = _S["sim"].run(param_values=pv).observables
+    obs = _S["sim"].run(pv, T)
     V = np.array([o["obs_VCAM1"][-1] for o in obs]); P = np.array([o["obs_P"][-1] for o in obs])
     return {("VCAM1", 150): np.log2(V[1] / V[0]), ("VCAM1", 500): np.log2(V[2] / V[0]),
             ("P", 150): np.log2(P[1] / P[0]),     ("P", 500): np.log2(P[2] / P[0])}
@@ -105,7 +100,8 @@ def main():
     from pydream.parameters import SampledParam
     from scipy.stats import uniform
 
-    m, fit_names, fit = setup(a.model)
+    sim, fit_names, fit = setup(a.model)
+    print(f"engine: {sim.kind}")
     print(f"{a.model}: fitting {len(fit_names)} parameters: {fit_names}")
     print("data (log2FC, sigma):", {f"{k[0]}@{k[1]}": (round(v[0], 2), round(v[1], 2)) for k, v in DATA.items()})
     t0 = time.time(); ll0 = loglik([np.mean(fit[n]) for n in fit_names]); print(f"one likelihood eval: {time.time()-t0:.2f} s (ll={ll0:.1f})")

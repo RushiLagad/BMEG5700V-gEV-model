@@ -1,31 +1,26 @@
 import json, os, sys, time
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import bng_setup  # noqa
-from pysb.simulator import ScipyOdeSimulator
-from pysb.bng import generate_equations
-from gev_models import build
+from engine import load
 import calibrate as C
 
 t0 = time.time()
 DOSES = np.arange(0, 601, 20.0)
 T = np.linspace(0, 600, 120)
+DOSES_T = T
 out = {"doses": DOSES.tolist()}
 
 # ---------- structural panel: M1, and M3 over a Km_arr x n_hill grid ----------
-def sweep(model, overrides):
-    names = [p.name for p in model.parameters]
-    base = np.array([p.value for p in model.parameters], float)
-    pv = np.tile(base, (len(DOSES), 1))
+def sweep(sim, overrides):
+    pv = np.tile(sim.defaults, (len(DOSES), 1))
     for k, v in overrides.items():
-        pv[:, names.index(k)] = v
-    pv[:, names.index("gEV_0")] = DOSES
-    obs = ScipyOdeSimulator(model, tspan=T, compiler="python").run(param_values=pv).observables
+        pv[:, sim.index[k]] = v
+    pv[:, sim.index["gEV_0"]] = DOSES
+    obs = sim.run(pv, T)
     V = np.array([o["obs_VCAM1"][-1] for o in obs]); P = np.array([o["obs_P"][-1] for o in obs])
     return (V / V[0]).tolist(), (P / P[0]).tolist()
 
-M1 = build(with_brake=False); generate_equations(M1)
-M3 = build(with_brake=True);  generate_equations(M3)
+M1 = load("M1"); M3 = load("M3")
 v, p = sweep(M1, {})
 out["m1"] = {"vcam1": v, "p": p}
 
@@ -53,7 +48,7 @@ for name in ("M1", "M3"):
     lp = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), f"dream_{name}", "logp.npy"))
     def curves(theta):
         pv = np.tile(C._S["base"], (len(DOSES), 1)); pv[:, C._S["idx"]] = 10 ** theta; pv[:, C._S["gidx"]] = DOSES
-        obs = C._S["sim"].run(param_values=pv).observables
+        obs = C._S["sim"].run(pv, DOSES_T)
         V = np.array([o["obs_VCAM1"][-1] for o in obs]); P = np.array([o["obs_P"][-1] for o in obs])
         return np.log2(V / V[0]).tolist(), np.log2(P / P[0]).tolist()
     bv, bp = curves(smp[np.argmax(lp)])

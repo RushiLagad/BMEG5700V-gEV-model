@@ -10,11 +10,8 @@ Runs both models across 13 doses in one batched ODE call each (a few seconds).
 """
 import argparse, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import bng_setup  # noqa: F401  sets BNGPATH so BioNetGen finds its own Perl modules
 import numpy as np
-from pysb.simulator import ScipyOdeSimulator
-from pysb.bng import generate_equations
-from gev_models import build
+from engine import load
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--threshold", type=float, default=72.0, help="occupied-receptor level at half-max braking (Km_arr)")
@@ -26,22 +23,18 @@ DOSES = np.array([0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600], d
 T = np.linspace(0, 400, 80)
 
 t0 = time.time()
-M1 = build(with_brake=False)
-M3 = build(with_brake=True)
 results = {}
-for m in (M1, M3):
-    generate_equations(m)
-    names = [p.name for p in m.parameters]
-    base = np.array([p.value for p in m.parameters])
-    pv = np.tile(base, (len(DOSES), 1))
-    pv[:, names.index("gEV_0")] = DOSES
-    pv[:, names.index("Km_arr")] = args.threshold
-    pv[:, names.index("n_hill")] = args.hill
-    sim = ScipyOdeSimulator(m, tspan=T, compiler="python")
-    res = sim.run(param_values=pv)
-    obs = res.observables                      # list of per-run record arrays
-    results[m.name] = {k: np.array([o[k][-1] for o in obs]) for k in obs[0].dtype.names}
-print(f"built + simulated 2 models x {len(DOSES)} doses in {time.time()-t0:.1f} s\n")
+engine_kind = None
+for label, mname in (("M1_one_receptor", "M1"), ("M3_receptor_plus_brake", "M3")):
+    sim = load(mname)
+    engine_kind = sim.kind
+    pv = np.tile(sim.defaults, (len(DOSES), 1))
+    pv[:, sim.index["gEV_0"]] = DOSES
+    pv[:, sim.index["Km_arr"]] = args.threshold
+    pv[:, sim.index["n_hill"]] = args.hill
+    obs = sim.run(pv, T)
+    results[label] = {k: np.array([o[k][-1] for o in obs]) for k in sim.observables}
+print(f"built + simulated 2 models x {len(DOSES)} doses in {time.time()-t0:.1f} s [{engine_kind} engine]\n")
 
 # ---------- table at the three measured doses ----------
 def rel(r, key):

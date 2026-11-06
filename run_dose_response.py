@@ -1,41 +1,34 @@
 """Simulate M1 and M3 to steady state across a dose sweep and plot the dose-response."""
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-import bng_setup  # noqa: F401  sets BNGPATH so BioNetGen finds its own Perl modules
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from pysb.simulator import ScipyOdeSimulator
-from gev_models import M1, M3
-from pysb.bng import generate_equations
+from engine import load
 
 DOSES = np.array([0, 25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 600])
 T = np.linspace(0, 400, 400)          # long enough to reach steady state
 MEASURED = [0, 150, 500]              # the three doses we actually have
 
 
-def steady_state(model, dose):
-    sim = ScipyOdeSimulator(model, tspan=T)
-    res = sim.run(param_values={"gEV_0": dose})
-    o = res.observables
-    return {k: float(o[k][-1]) for k in o.dtype.names}
-
-
-def sweep(model):
-    rows = [steady_state(model, d) for d in DOSES]
-    return {k: np.array([r[k] for r in rows]) for k in rows[0]}
+def sweep(model_name):
+    sim = load(model_name)
+    pv = np.tile(sim.defaults, (len(DOSES), 1))
+    pv[:, sim.index["gEV_0"]] = DOSES
+    obs = sim.run(pv, T)
+    return sim, {k: np.array([o[k][-1] for o in obs]) for k in sim.observables}
 
 
 out = {}
-for m in (M1, M3):
-    generate_equations(m)
-    print(f"\n{m.name}: {len(m.species)} species, {len(m.reactions)} reactions, {len(m.odes)} ODEs")
-    out[m.name] = sweep(m)
-    r = out[m.name]
+for mname, label in (("M1", "M1_one_receptor"), ("M3", "M3_receptor_plus_brake")):
+    sim, r = sweep(mname)
+    out[label] = r
+    print(f"\n{label}: {sim.kind} engine")
     print("  dose   occ   braked   Sig    VCAM1    P")
     for i, d in enumerate(DOSES):
-        print(f"  {d:4d}  {r['obs_occ'][i]:5.1f}  {r['obs_braked'][i]:6.1f}  {r['obs_Sig'][i]:5.1f}  {r['obs_VCAM1'][i]:6.2f}  {r['obs_P'][i]:6.2f}")
+        print(f"  {d:4d}  {r['obs_occ'][i]:5.1f}  {r['obs_braked'][i]:6.1f}  "
+              f"{r['obs_Sig'][i]:5.1f}  {r['obs_VCAM1'][i]:6.2f}  {r['obs_P'][i]:6.2f}")
 
 # ---------- plot ----------
 fig, axes = plt.subplots(1, 3, figsize=(15, 4.6))

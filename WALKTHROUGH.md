@@ -1,7 +1,8 @@
 # Walkthrough
 
 A guided run of the whole project in 8 to 10 minutes: the structural claim first, then the
-calibration. Everything here runs from this folder after `python setup_check.py`.
+calibration. Everything here runs from this folder after `python setup_check.py`, with no
+BioNetGen or Perl needed.
 
 ## Part 1: the structural claim (3 minutes, no fitting)
 

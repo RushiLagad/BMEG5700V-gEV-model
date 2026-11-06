@@ -24,16 +24,17 @@ if a.live:
     lines = [l for l in r.stdout.splitlines() if l.strip() and not l.startswith("Saving")]
     print("\n".join(lines[:3])); print("   ..."); print("\n".join(lines[-6:]))
     print(f"(that took {time.time()-t0:.0f} s; the saved fit below used 1500 iterations)")
-    # restore the full-run summary if the short run overwrote it
-    full = os.path.join(HERE, "dream_M3", "summary_full.json")
-    if os.path.exists(full):
-        import shutil; shutil.copy(full, os.path.join(HERE, "dream_M3", "summary.json"))
-        for f in ("samples_log10", "logp"):
-            if os.path.exists(os.path.join(HERE, "dream_M3", f + "_full.npy")):
-                shutil.copy(os.path.join(HERE, "dream_M3", f + "_full.npy"), os.path.join(HERE, "dream_M3", f + ".npy"))
 
 import calibrate as C
-S = {m: json.load(open(os.path.join(HERE, f"dream_{m}", "summary.json"))) for m in ("M1", "M3")}
+
+
+def ref(model, stem, ext):
+    """Prefer <stem>_full.<ext>, the reference run, over whatever a later run left behind."""
+    full = os.path.join(HERE, f"dream_{model}", f"{stem}_full.{ext}")
+    return full if os.path.exists(full) else os.path.join(HERE, f"dream_{model}", f"{stem}.{ext}")
+
+
+S = {m: json.load(open(ref(m, "summary", "json"))) for m in ("M1", "M3")}
 
 print("\n=== saved fit: M1 vs M3 against the real log2 fold changes ===")
 keys = ["VCAM1@150", "VCAM1@500", "P@150", "P@500"]
@@ -68,10 +69,10 @@ rng = np.random.default_rng(0)
 fig, ax = plt.subplots(1, 2, figsize=(12, 4.6))
 for model, color, label in (("M1", "#8A93A0", "M1: one receptor"), ("M3", "#1F9E89", "M3: receptor + β-arrestin2 brake")):
     C.setup(model)
-    smp = np.load(os.path.join(HERE, f"dream_{model}", "samples_log10.npy")); lp = np.load(os.path.join(HERE, f"dream_{model}", "logp.npy"))
+    smp = np.load(ref(model, "samples_log10", "npy")); lp = np.load(ref(model, "logp", "npy"))
     def curves(theta):
         pv = np.tile(C._S["base"], (len(DOSES), 1)); pv[:, C._S["idx"]] = 10 ** theta; pv[:, C._S["gidx"]] = DOSES
-        obs = C._S["sim"].run(param_values=pv).observables
+        obs = C._S["sim"].run(pv, C.T)
         V = np.array([o["obs_VCAM1"][-1] for o in obs]); P = np.array([o["obs_P"][-1] for o in obs])
         return np.log2(V / V[0]), np.log2(P / P[0])
     for th in smp[rng.choice(len(smp), 40, replace=False)]:

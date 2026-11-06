@@ -33,26 +33,33 @@ BioNetGen. Both models have 8 species, 12 reactions, 8 ODEs.
 | `CHANGES_after_review.md` | Each code-review comment mapped to what changed in the model. |
 | `FIT_RESULTS.md` | The fitted numbers, what is identifiable, and the caveats. |
 | `WALKTHROUGH.md` | A guided run of the whole thing in 8 to 10 minutes. |
+| `engine.py` | One simulation interface. Uses the pre-generated networks by default, PySB if you ask for it. |
+| `network_M1.py`, `network_M3.py` | The reaction networks generated from the PySB models. Plain numpy and scipy, no BioNetGen. |
 | `setup_check.py` | One-time install, the PyDREAM NumPy 2 patch, and a smoke test. |
-| `requirements.txt` | The exact package versions this was run and calibrated with. |
-| `bng_setup.py` | Sets `BNGPATH` so BioNetGen finds its own Perl modules on Windows. |
-| `fix_bng.py` | Diagnostic for the BioNetGen / perl setup if `demo.py` fails. |
+| `requirements.txt` | What you need to run it. |
 | `dream_M1/`, `dream_M3/` | Saved posterior samples, log-likelihoods, and fit summaries. |
+| `make_network.py` | Author-side. Regenerates the network files from `gev_models.py`. Needs BioNetGen. |
+| `verify_network.py` | Author-side. Checks the generated networks still match the PySB models. |
+| `bng_setup.py`, `fix_bng.py` | Author-side helpers for getting BioNetGen working on Windows. |
 
 ## Setup (one time)
 ```
+git clone https://github.com/RushiLagad/BMEG5700V-gEV-model.git
+cd BMEG5700V-gEV-model
 python setup_check.py
 ```
-That installs `pysb`, `bionetgen`, `pydream`, `pandas`, `matplotlib` and `scipy` if missing,
-applies the PyDREAM NumPy 2 patch, and runs a smoke test.
+That installs numpy, scipy, pandas, matplotlib and pydream if they are missing, applies the
+PyDREAM NumPy 2 patch, and smoke-tests both models and the saved fits. Python 3.10 or newer.
 
-Doing it by hand instead: `pip install pysb bionetgen matplotlib pandas pydream`, then either
-`pip install "numpy<2"` or edit `pydream/Dream.py` lines 468 and 523, changing `[0])` to `[0][0])`
-(PyDREAM 2.0.0 calls `int()` on a one-element array, which NumPy 2 refuses).
+**You do not need BioNetGen or Perl.** `gev_models.py` is the PySB source of truth for both
+models, but its reaction network is pre-generated into `network_M1.py` and `network_M3.py`,
+which contain only numpy and scipy. That is what everything runs on, and it is also about ten
+times faster than going through PySB.
 
-On Windows, if BioNetGen dies with `Can't locate BNGUtils.pm in @INC`, the perl first on PATH is
-the MSYS / Git one, whose `FindBin` cannot resolve a `C:\` script path. `bng_setup.py` fixes this
-by setting `BNGPATH`, and the entry scripts import it. `python fix_bng.py` diagnoses the rest.
+To work from the PySB models directly instead, install `pysb` and `bionetgen` (and Perl, on
+Windows) and either set `GEV_ENGINE=pysb` or pass `engine="pysb"` to `engine.load`. After
+editing `gev_models.py`, run `python make_network.py` to regenerate, then `python
+verify_network.py` to confirm the two agree. They currently match to 1.3e-7.
 
 ## Run
 ```
@@ -94,3 +101,7 @@ Of M3's 10 fitted parameters, three doses pin down three: `fold_p`, `Km_arr`, `n
 2. Export limma per-protein SEs and replace `SIGMA_FLOOR`.
 3. Histology on the aortic arch samples to settle whether the flip proteins are cardiac contamination.
 4. Add the gut/acetate branch (M2, M4) as a structural "can it fit at all" test.
+
+## Licence
+MIT, see `LICENSE`. The code is free to reuse. The unpublished fold changes in `targets.csv`
+are the collaboration's data, not covered by that licence; ask before building on them.
