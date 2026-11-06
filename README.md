@@ -15,9 +15,12 @@ experiment run in collaboration with Dr. Kaustav Majumder's lab (University of N
 These results are unpublished. The dose labels are nominal in the model, which fits dose in
 arbitrary units; see the caveats below before reusing any number here.
 
-**Interactive explorer.** An interactive version of the two panels below, with a slider for the
-brake threshold and the fitted posteriors drawn against the data:
-https://claude.ai/artifact/GeYWW9LWJCcEsR8hXijkyM (viewable by people it has been shared with).
+**Interactive explorer:** https://rushilagad.github.io/BMEG5700V-gEV-model/
+
+A browser version of everything below, with a slider for the brake threshold, the fitted
+posteriors drawn against the data, and the identifiability breakdown. No install, no sign-in.
+It is a single static page with the numbers baked in, served from `docs/` by GitHub Pages, so
+there is no server to keep running.
 
 Two candidate wirings of the direct receptor route, defined in PySB and simulated from the
 pre-generated networks. Both models have 8 species, 12 reactions, 8 ODEs.
@@ -38,6 +41,7 @@ pre-generated networks. Both models have 8 species, 12 reactions, 8 ODEs.
 | `setup_check.py` | One-time install, the PyDREAM NumPy 2 patch, and a smoke test. |
 | `requirements.txt` | What you need to run it. |
 | `dream_M1/`, `dream_M3/` | Saved posterior samples, log-likelihoods, and fit summaries. |
+| `docs/index.html` | The interactive explorer, served by GitHub Pages. Rebuilt by `make_dash_data.py`. |
 | `make_network.py` | Author-side. Regenerates the network files from `gev_models.py`. Needs BioNetGen. |
 | `verify_network.py` | Author-side. Checks the generated networks still match the PySB models. |
 | `bng_setup.py`, `fix_bng.py` | Author-side helpers for getting BioNetGen working on Windows. |
