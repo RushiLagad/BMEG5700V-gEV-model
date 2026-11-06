@@ -24,6 +24,11 @@ HEADER = '''"""
 Reaction network for {model}, generated from gev_models.py by make_network.py.
 Do not edit by hand. Needs only numpy and scipy.
 
+There is deliberately no analytic Jacobian here. Differentiating the Hill term leaves
+x**n/x, which is 0/0 at zero occupancy, and the tidy symbolic forms put x back under
+the fraction. A finite-difference Jacobian costs about 3 percent more time and cannot
+produce a NaN, so the solver computes its own.
+
 Species are indexed in BioNetGen's order:
 {species}
 """
@@ -46,12 +51,6 @@ def rhs(t, y, p):
     return np.array([
 {rhs}
     ])
-
-
-def jac(t, y, p):
-    J = np.zeros(({nspecies}, {nspecies}))
-{jac}
-    return J
 
 
 def initial_state(p):
@@ -95,14 +94,6 @@ def generate(model_name, with_brake):
     for i, o in enumerate(odes):
         rhs_lines.append("        %s,   # d[%s]/dt" % (printer(o), m.species[i]))
 
-    jac_lines = []
-    M = sympy.Matrix(odes)
-    for i in range(nsp):
-        for j in range(nsp):
-            d = sympy.simplify(sympy.diff(M[i], sympy.Symbol("y[%d]" % j)))
-            if d != 0:
-                jac_lines.append("    J[%d, %d] = %s" % (i, j, printer(d)))
-
     initials = {}
     for ic in m.initials:
         si = None
@@ -132,7 +123,6 @@ def generate(model_name, with_brake):
         observables=repr(obs),
         nspecies=nsp,
         rhs="\n".join(rhs_lines),
-        jac="\n".join(jac_lines) if jac_lines else "    pass",
     )
     dest = os.path.join(HERE, "network_%s.py" % model_name)
     open(dest, "w", encoding="utf-8").write(src)

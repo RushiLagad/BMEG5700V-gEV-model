@@ -70,18 +70,23 @@ python demo_fit.py --live 150           # 70 s of visible sampling first
 python calibrate.py --model M3 --niter 5000 --nchains 3    # the real run, tens of minutes
 ```
 
-## What the fit says (real targets, PyDREAM, 3 chains x 1500)
+## What the fit says (real targets, PyDREAM, 3 chains x 30000, both converged)
 | | VCAM1 @150 | VCAM1 @500 | P @150 | P @500 | max log-lik | AIC |
 |---|---|---|---|---|---|---|
 | Data (log2FC) | -1.24 | -0.48 | -1.79 | +1.62 | | |
-| M1 one receptor | -0.87 | -0.89 | -0.31 | -0.31 | -27.2 | 66.4 |
-| M3 receptor + brake | -0.70 | -0.91 | -1.71 | +1.43 | -10.2 | 40.4 |
+| M1 one receptor | -0.84 | -0.85 | -0.30 | -0.30 | -27.2 | 66.4 |
+| M3 receptor + brake | -0.73 | -0.94 | -1.70 | +1.64 | -10.0 | 40.0 |
 
 Delta AIC = 26 in favour of M3, after paying for its 4 extra parameters. M1's best possible fit
 to P is flat: one saturating receptor cannot change sign across dose at any parameter values.
 
-Of M3's 10 fitted parameters, three doses pin down three: `fold_p`, `Km_arr`, `n_hill`.
-`KI_p`, `KA_p` and `kcat_arr` are unidentified from this data.
+Gelman-Rubin is 1.003 for M1 and 1.017 for M3, so both runs have converged.
+
+Of M3's 10 fitted parameters, three doses constrain the shape of the switch and little else.
+Measured as shrinkage against the prior: `n_hill` 65%, `fold_p` 56%, `kr` 49%, `Km_arr` 28%, and
+the remaining six between 4% and 23%. `Km_arr` correlates -0.90 with `kr`, so what the data fix
+is the dose at which occupancy crosses the brake threshold, not either parameter alone. Full
+table and the other trade-offs in `FIT_RESULTS.md`.
 
 ## Honest caveats
 * The brake is keyed to the occupied receptor through a Michaelis-Menten (Hill) reduction with
@@ -89,18 +94,19 @@ Of M3's 10 fitted parameters, three doses pin down three: `fold_p`, `Km_arr`, `n
   keyed it to the clamped peptide level, which was wrong; see `CHANGES_after_review.md`.
 * Dose enters as `gEV_0` in the same arbitrary units as `kf`/`kr`, so the receptor Kd is fitted
   rather than assumed. The mg/kg/day labels on the x axis are nominal.
-* The M3 run has not converged: Gelman-Rubin max 1.61 against a target of 1.1. The AIC gap is
-  large enough that the model ranking stands, but no posterior interval should be quoted yet.
 * The likelihood sigma is a 0.35 log2 placeholder, not limma's per-protein standard errors.
-* The posterior wants a Hill coefficient of 7 to 15, steeper than a plain recruitment step should
-  give. Probably a missing mechanism, most likely receptor internalization and recycling.
-* VCAM1 recovers partway at 500 in the data (-0.48) and the model does not reproduce it (-0.91).
+  Every posterior interval depends on that choice.
+* The posterior wants a Hill coefficient of 6 to 16, steeper than a plain recruitment step should
+  give. Receptor internalization and recycling are the most likely missing mechanism.
+* VCAM1 recovers partway at 500 in the data (-0.48) and the model does not reproduce it (-0.94).
+* The individual rate constants are not identified by three doses. The model ranking is robust;
+  the kinetics are not, and should not be quoted as estimates.
 
 ## Next
-1. Run `calibrate.py --model M3 --niter 5000` to convergence before quoting intervals.
-2. Export limma per-protein SEs and replace `SIGMA_FLOOR`.
-3. Histology on the aortic arch samples to settle whether the flip proteins are cardiac contamination.
-4. Add the gut/acetate branch (M2, M4) as a structural "can it fit at all" test.
+1. Export limma per-protein SEs and replace `SIGMA_FLOOR`.
+2. Histology on the aortic arch samples to settle whether the flip proteins are cardiac contamination.
+3. Add the gut/acetate branch (M2, M4) as a structural "can it fit at all" test.
+4. More doses, if a follow-up study is possible: the trade-offs above are a dose-design problem.
 
 ## Licence
 MIT, see `LICENSE`. The code is free to reuse. The unpublished fold changes in `targets.csv`

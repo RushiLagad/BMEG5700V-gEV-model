@@ -52,40 +52,44 @@ likelihood is Gaussian on the log2 scale with uniform priors in log10.
 | | VCAM1 @150 | VCAM1 @500 | P @150 | P @500 | max log-lik | AIC |
 |---|---|---|---|---|---|---|
 | Data | -1.24 | -0.48 | -1.79 | +1.62 | | |
-| M1 | -0.87 | -0.89 | -0.31 | -0.31 | -27.2 | 66.4 |
-| M3 | -0.70 | -0.91 | -1.71 | +1.43 | -10.2 | 40.4 |
+| M1 | -0.84 | -0.85 | -0.30 | -0.30 | -27.2 | 66.4 |
+| M3 | -0.73 | -0.94 | -1.70 | +1.64 | -10.0 | 40.0 |
 
 Delta AIC is 26 in favour of M3, after paying for four extra parameters. M1's best possible fit
-to P is flat at -0.31 for both doses.
+to P is flat at -0.30 for both doses.
 
 ### What three doses can and cannot constrain
 
-Of M3's ten fitted parameters, three are pinned by the data: `fold_p`, `Km_arr` and `n_hill`.
-Three are unidentified: `KI_p`, `KA_p` and `kcat_arr`. The data pin the brake threshold and the
-flip amplitude and say nothing about the arrestin catalytic rate. More doses would be needed.
+Measured as shrinkage against the prior, the switch steepness `n_hill` narrows by 65 percent and
+the induction amplitude `fold_p` by 56. The rate constants barely move: `kcat_arr` 7 percent,
+`kreset` 4. The brake threshold `Km_arr` shows only 28 percent, but that is misleading on its
+own, because it correlates -0.90 with the binding affinity `kr`. What the data fix is the dose at
+which occupancy crosses the threshold, not either parameter separately.
+
+The line to land: three doses identify the shape of the switch and two parameter combinations,
+and say nothing about the individual kinetics. That is a dose-design limit, not a model failure.
 
 ### Convergence
 
-Gelman-Rubin reaches 1.61 on the M3 run against a target below 1.1, so this run has not
-converged. The AIC gap is wide enough that the model ranking stands, but the posterior intervals
-are provisional until a longer run finishes.
+Both runs converged over 30000 iterations by 3 chains: Gelman-Rubin 1.003 for M1 and 1.017 for
+M3, against a target below 1.1.
 
 `demo_fit.png` is drawn at the end: 40 posterior draws per model, the best fit in bold, data in
 black. In the right panel the M1 band is flat through zero while the M3 band crosses it.
 
 ## Known misfits
 
-**VCAM1 at 500.** The data say -0.48 and M3 says -0.91. The fit splits the difference between the
+**VCAM1 at 500.** The data say -0.48 and M3 says -0.94. The fit splits the difference between the
 two doses rather than reproducing the partial recovery. Either VCAM1 has a recovery mechanism the
 model lacks, or the 500 point is noisy; it carries FDR 0.41 in proteomics, and the western blot
 establishes only that it is lower, not by how much.
 
-**Hill coefficient.** The posterior prefers n between 7 and 15, steeper than a plain
+**Hill coefficient.** The posterior prefers n between 6 and 16, steeper than a plain
 arrestin-recruitment step should produce. Receptor internalization and recycling, which are not
 in the model, are the most likely missing mechanism.
 
 **Placeholder sigma.** The likelihood uses 0.35 log2 units rather than limma's per-protein
-standard errors, which have not been exported yet.
+standard errors, which have not been exported yet. Every posterior interval depends on it.
 
 ## Why only five flip proteins
 

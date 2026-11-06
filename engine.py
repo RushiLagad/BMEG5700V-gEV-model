@@ -47,8 +47,9 @@ class _NetworkSim:
         out = []
         for p in pv:
             y0 = mod.initial_state(p)
+            # LSODA builds its own Jacobian by finite differences; see the note in
+            # the generated module for why no analytic one is supplied
             y = odeint(lambda yy, tt: mod.rhs(tt, yy, p), y0, tspan,
-                       Dfun=lambda yy, tt: mod.jac(tt, yy, p),
                        rtol=1e-8, atol=1e-10, mxstep=20000)
             rec = {}
             for name, terms in mod.OBSERVABLES.items():

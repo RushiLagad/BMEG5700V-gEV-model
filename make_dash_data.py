@@ -43,9 +43,15 @@ for k, (mu, sd) in C.DATA.items():
     fit["data"][f"{k[0]}@{k[1]}"] = {"dose": k[1], "mean": mu, "sd": sd, "obs": k[0]}
 for name in ("M1", "M3"):
     C.setup(name)
-    S = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f"dream_{name}", "summary.json")))
-    smp = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), f"dream_{name}", "samples_log10.npy"))
-    lp = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), f"dream_{name}", "logp.npy"))
+    def _ref(stem, ext):
+        """Same reference-run rule as demo_fit.py, so the two always agree."""
+        d = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"dream_{name}")
+        full = os.path.join(d, f"{stem}_full.{ext}")
+        return full if os.path.exists(full) else os.path.join(d, f"{stem}.{ext}")
+
+    S = json.load(open(_ref("summary", "json")))
+    smp = np.load(_ref("samples_log10", "npy"))
+    lp = np.load(_ref("logp", "npy"))
     def curves(theta):
         pv = np.tile(C._S["base"], (len(DOSES), 1)); pv[:, C._S["idx"]] = 10 ** theta; pv[:, C._S["gidx"]] = DOSES
         obs = C._S["sim"].run(pv, DOSES_T)
@@ -55,7 +61,23 @@ for name in ("M1", "M3"):
     draws = []
     for th in smp[rng.choice(len(smp), 25, replace=False)]:
         dv, dp = curves(th); draws.append({"vcam1": dv, "p": dp})
+    _fitranges = dict(C.FIT)
+    if name == "M3":
+        _fitranges.update(C.FIT_M3_EXTRA)
+    _q = S.get("posterior_quantiles_log10", {})
+    _corr = {}
+    if _q:
+        _nm = list(_q)
+        _cc = np.corrcoef(smp.T)
+        _corr = {f"{_nm[i]}|{_nm[j]}": round(float(_cc[i][j]), 3)
+                 for i in range(len(_nm)) for j in range(i + 1, len(_nm))
+                 if abs(_cc[i][j]) > 0.7}
     fit["models"][name] = {
+        "priors": {k: list(v) for k, v in _fitranges.items()},
+        "correlated": _corr,
+        "gelman_rubin_max": (max(S["gelman_rubin"].values())
+                             if isinstance(S.get("gelman_rubin"), dict) else None),
+        "niterations": S.get("niterations"), "nchains": S.get("nchains"),
         "best": {"vcam1": bv, "p": bp}, "draws": draws,
         "loglik": S["max_loglik"], "aic": S["AIC"], "n_params": S["n_params"],
         "pred": S["best_pred"], "quantiles": S.get("posterior_quantiles_log10", {}),

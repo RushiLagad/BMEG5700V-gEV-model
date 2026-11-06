@@ -2,6 +2,11 @@
 Reaction network for M3, generated from gev_models.py by make_network.py.
 Do not edit by hand. Needs only numpy and scipy.
 
+There is deliberately no analytic Jacobian here. Differentiating the Hill term leaves
+x**n/x, which is 0/0 at zero occupancy, and the tidy symbolic forms put x back under
+the fraction. A finite-difference Jacobian costs about 3 percent more time and cannot
+produce a NaN, so the solver computes its own.
+
 Species are indexed in BioNetGen's order:
   0: gEV(b=None)
   1: CaSR(b=None, arr='off')
@@ -38,29 +43,6 @@ def rhs(t, y, p):
         p[12]*p[13]*y[4]*y[4]**(p[15] - 1)/(p[14]**p[15] + y[4]**p[15]) - p[16]*y[6],   # d[CaSR(b=1, arr='on') % gEV(b=1)]/dt
         p[17]*y[6] - p[18]*y[7],   # d[S2()]/dt
     ])
-
-
-def jac(t, y, p):
-    J = np.zeros((8, 8))
-    J[1, 0] = -p[2]*y[1]
-    J[1, 1] = -p[2]*y[0]
-    J[1, 4] = p[3]
-    J[1, 6] = p[16]
-    J[2, 2] = -p[7]
-    J[2, 5] = -p[6]*p[8]/(p[8] + y[5])**2
-    J[3, 3] = -p[10]
-    J[3, 5] = -p[11]*p[9]*(p[19] + p[20]*y[7] + y[7])/((p[11] + y[5])**2*(p[19] + y[7]))
-    J[3, 7] = p[11]*p[19]*p[20]*p[9]/((p[11] + y[5])*(p[19] + y[7])**2)
-    J[4, 0] = p[2]*y[1]
-    J[4, 1] = p[2]*y[0]
-    J[4, 4] = -p[12]*p[13]*p[14]**p[15]*p[15]*y[4]**p[15]/(y[4]*(p[14]**p[15] + y[4]**p[15])**2) - p[3]
-    J[5, 4] = p[4]
-    J[5, 5] = -p[5]
-    J[6, 4] = p[12]*p[13]*p[14]**p[15]*p[15]*y[4]**p[15]/(y[4]*(p[14]**p[15] + y[4]**p[15])**2)
-    J[6, 6] = -p[16]
-    J[7, 6] = p[17]
-    J[7, 7] = -p[18]
-    return J
 
 
 def initial_state(p):

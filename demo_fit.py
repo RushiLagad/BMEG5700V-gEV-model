@@ -16,6 +16,12 @@ ap.add_argument("--live", type=int, default=0, help="run this many PyDREAM itera
 ap.add_argument("--no-plot", action="store_true")
 a = ap.parse_args()
 
+def ref(model, stem, ext):
+    """Prefer <stem>_full.<ext>, the reference run, over whatever a later run left behind."""
+    full = os.path.join(HERE, f"dream_{model}", f"{stem}_full.{ext}")
+    return full if os.path.exists(full) else os.path.join(HERE, f"dream_{model}", f"{stem}.{ext}")
+
+
 if a.live:
     print(f"\n=== live: PyDREAM on M3, 3 chains x {a.live} iterations (watch the log-likelihood climb) ===")
     t0 = time.time()
@@ -23,15 +29,11 @@ if a.live:
                        capture_output=True, text=True)
     lines = [l for l in r.stdout.splitlines() if l.strip() and not l.startswith("Saving")]
     print("\n".join(lines[:3])); print("   ..."); print("\n".join(lines[-6:]))
-    print(f"(that took {time.time()-t0:.0f} s; the saved fit below used 1500 iterations)")
+    _ref_n = json.load(open(ref("M3", "summary", "json"))).get("niterations")
+    print(f"(that took {time.time()-t0:.0f} s; the saved fit below used "
+          f"{_ref_n if _ref_n else 'many more'} iterations)")
 
 import calibrate as C
-
-
-def ref(model, stem, ext):
-    """Prefer <stem>_full.<ext>, the reference run, over whatever a later run left behind."""
-    full = os.path.join(HERE, f"dream_{model}", f"{stem}_full.{ext}")
-    return full if os.path.exists(full) else os.path.join(HERE, f"dream_{model}", f"{stem}.{ext}")
 
 
 S = {m: json.load(open(ref(m, "summary", "json"))) for m in ("M1", "M3")}
@@ -45,13 +47,37 @@ for m, label in (("M1", "M1 one receptor"), ("M3", "M3 receptor + brake")):
 print(f"\nDelta AIC = {S['M1']['AIC'] - S['M3']['AIC']:.0f} in favour of M3, after paying for {S['M3']['n_params'] - S['M1']['n_params']} extra parameters.")
 print("M1's best effort is a flat P: it cannot go down at 150 and up at 500 at ANY parameter values.")
 
-print("\n=== what the three doses pin down (M3, 95% posterior, log10) ===")
+print("\n=== what the three doses actually constrain (M3) ===")
+print("shrinkage is how much narrower the 95% posterior is than the prior it started from")
+_fit = dict(C.FIT); _fit.update(C.FIT_M3_EXTRA)
+_rows = []
 for n, q in S["M3"]["posterior_quantiles_log10"].items():
-    w = q[2] - q[0]; tag = "PINNED" if w < 1.0 else ("loose" if w < 2.5 else "unidentified")
-    print(f"  {n:9s} [{q[0]:6.2f}, {q[2]:6.2f}]   {tag}")
+    pw = _fit[n][1] - _fit[n][0]
+    w = q[2] - q[0]
+    _rows.append((1 - w / pw, n, q, w))
+for shrink, n, q, w in sorted(_rows, reverse=True):
+    tag = "constrained" if shrink > 0.4 else ("weak" if shrink > 0.2 else "unconstrained")
+    print(f"  {n:9s} [{q[0]:6.2f}, {q[2]:6.2f}] log10   shrinkage {100*shrink:4.1f}%   {tag}")
+
+_X = np.load(ref("M3", "samples_log10", "npy"))
+_names = list(S["M3"]["posterior_quantiles_log10"])
+_C = np.corrcoef(_X.T)
+_pairs = [(abs(_C[i][j]), _names[i], _names[j], _C[i][j])
+          for i in range(len(_names)) for j in range(i + 1, len(_names))
+          if abs(_C[i][j]) > 0.7]
+if _pairs:
+    print("\n  strongly traded off against each other, so only the combination is identified:")
+    for _, _pa, _pb, _r in sorted(_pairs, reverse=True):
+        print(f"    {_pa:9s} vs {_pb:9s}  r = {_r:+.2f}")
+
 gr = S["M3"].get("gelman_rubin")
 if isinstance(gr, dict):
-    print(f"\nGelman-Rubin (want < 1.1): max = {max(gr.values()):.2f}  ->  " + ("converged" if max(gr.values()) < 1.1 else "NOT yet converged; this is a 1500-iteration run, 5000+ needed before quoting intervals"))
+    worst = max(gr.values())
+    nit = S["M3"].get("niterations")
+    run = f" ({nit} iterations x {S['M3'].get('nchains')} chains)" if nit else ""
+    verdict = ("converged" if worst < 1.1 else
+               "NOT converged; run more iterations before quoting any interval")
+    print(f"\nGelman-Rubin (want < 1.1): max = {worst:.2f}{run}  ->  {verdict}")
 
 if a.no_plot: sys.exit(0)
 import matplotlib

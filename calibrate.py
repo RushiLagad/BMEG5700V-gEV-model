@@ -77,6 +77,12 @@ def simulate(theta_log10):
             ("P", 150): np.log2(P[1] / P[0]),     ("P", 500): np.log2(P[2] / P[0])}
 
 def loglik(theta):
+    # On Windows (and anywhere multiprocessing uses "spawn") each worker imports this
+    # module fresh, so _S is empty in the worker and every evaluation would throw and
+    # return the -1e12 sentinel. The model name travels through the environment, which
+    # spawn does propagate, so each worker can rebuild its own state once.
+    if not _S:
+        setup(os.environ.get("GEV_FIT_MODEL", "M3"))
     try:
         pred = simulate(theta)
     except Exception:
@@ -100,6 +106,10 @@ def main():
     from pydream.parameters import SampledParam
     from scipy.stats import uniform
 
+    os.environ["GEV_FIT_MODEL"] = a.model          # read by workers under spawn
+    if os.environ.get("GEV_SPAWN"):                 # to test the spawn path on Linux
+        import multiprocessing
+        multiprocessing.set_start_method("spawn", force=True)
     sim, fit_names, fit = setup(a.model)
     print(f"engine: {sim.kind}")
     print(f"{a.model}: fitting {len(fit_names)} parameters: {fit_names}")
@@ -116,6 +126,13 @@ def main():
     print(f"sampling done in {(time.time()-t0)/60:.1f} min")
 
     burn = a.niter // 2
+    _peak = max(float(np.max(l)) for l in logps)
+    if _peak < -1e11:
+        print("\nRUN FAILED: every likelihood evaluation returned the error sentinel, so the\n"
+              "chains never saw a real gradient. Nothing has been saved. This is what a broken\n"
+              "worker process looks like; rerun and if it repeats, run with --nchains 1 to see\n"
+              "the underlying exception.")
+        sys.exit(1)
     samples = np.concatenate([s[burn:] for s in sampled]); lp = np.concatenate([l[burn:] for l in logps]).ravel()
     np.save(os.path.join(out, "samples_log10.npy"), samples); np.save(os.path.join(out, "logp.npy"), lp)
 
@@ -123,6 +140,8 @@ def main():
     best = samples[np.argmax(lp)]
     pred = simulate(best)
     summ = {"model": a.model, "n_params": len(fit_names), "max_loglik": float(lp.max()),
+            "niterations": a.niter, "nchains": a.nchains, "seed": a.seed,
+            "n_posterior_samples": int(samples.shape[0]),
             "AIC": float(2 * len(fit_names) - 2 * lp.max()),
             "best_log10": dict(zip(fit_names, map(float, best))),
             "posterior_quantiles_log10": {n: [float(q) for q in np.quantile(samples[:, i], [0.025, 0.5, 0.975])] for i, n in enumerate(fit_names)},
